@@ -37,8 +37,6 @@ def main():
         print "Process cannot get information from the server. Exit."
         sys.exit(1)
 
-    gc.collect()
-
     start_workers()
     log.info("***********************************************")
 
@@ -47,6 +45,7 @@ def main():
             log.info("Init scanner of account: " + ACCOUNTS[i]["name"])
             start_scanners(api, ACCOUNTS[i])
             log.info("***********************************************")
+            gc.collect()
 
         time.sleep(PULL_INTERVAL)
 

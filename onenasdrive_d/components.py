@@ -253,7 +253,6 @@ class Waiter(threading.Thread):
 			del t
 
 		TASK_QUEUE.join()
-		gc.collect()
-
 		log.info("Thread finished.")
+
 		EVENT_STOP.set()
