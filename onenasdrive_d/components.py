@@ -21,7 +21,8 @@ CONFIG_FILE = None
 TASK_QUEUE = Queue.Queue()
 SCANNER_QUEUE = Queue.Queue()
 SCANNER_SEMAPHORE = threading.BoundedSemaphore(value = NUM_OF_SCANNERS)
-EVENT_STOP = threading.Event()
+EVENT_STOP_SCANNERS = threading.Event()
+EVENT_STOP_WORKERS = threading.Event()
 
 # rename files that have same name in lowecase
 # and return a dictionary of the new file names
@@ -115,13 +116,17 @@ class TaskWorker(threading.Thread):
 
 	def run(self):
 		while True:
-			if TASK_QUEUE.empty():
+			if EVENT_STOP_WORKERS.isSet():
+				break
+			elif TASK_QUEUE.empty():
 				time.sleep(WORKER_SLEEP_INTERVAL)
 			else:
 				task = TASK_QUEUE.get()
 				self.consume(task)
 				del task
 				TASK_QUEUE.task_done()
+
+		log.info("Thread finished.")
 
 # DirScanner represents either a file entry or a dir entry in the OneDrive repository
 # it uses a single thread to process a directory entry
@@ -255,4 +260,4 @@ class Waiter(threading.Thread):
 		TASK_QUEUE.join()
 		log.info("Thread finished.")
 
-		EVENT_STOP.set()
+		EVENT_STOP_SCANNERS.set()
