@@ -65,7 +65,7 @@ class TaskWorker(threading.Thread):
 	def __init__(self):
 		threading.Thread.__init__(self)
 		self.daemon = True
-		log.debug(self.getName() + " (worker): initiated")
+		log.info(self.getName() + " (worker): initiated")
 
 	def getArgs(self, t):
 		return {
@@ -92,24 +92,24 @@ class TaskWorker(threading.Thread):
 			new_mtime = timegm(parser.parse(t.timeStamp).utctimetuple())
 			os.utime(t.p1, (new_mtime, new_mtime))
 			new_old_mtime = os.stat(t.p1).st_mtime
-			log.debug(t.p1 + " Old_mtime is " + str(old_mtime) + " and new_mtime is " + str(new_mtime) + " and is changed to " + str(new_old_mtime))
+			log.info(t.p1 + " Old_mtime is " + str(old_mtime) + " and new_mtime is " + str(new_mtime) + " and is changed to " + str(new_old_mtime))
 		elif t.type == "mkdir" and t.p1 != "":
 			# upload the local dir to remote
 			# correspond to scanner's post_merge
 			_ent_list = resolve_CaseConflict(t.p1)
 			for entry in _ent_list:
 				if EXCLUDE != "" and re.match(EXCLUDE, entry):
-					log.debug(t.p1 + "/" + entry + " is excluded by worker.")
+					log.info(t.p1 + "/" + entry + " is excluded by worker.")
 				elif os.path.isfile(t.p1 + "/" + entry):
 					TASK_QUEUE.put(Task("put", t.p1 + "/" + entry, t.p2 + "/" + entry))
 				else:	# a dir
 					TASK_QUEUE.put(Task("mkdir", t.p1 + "/" + entry, t.p2 + "/" + entry))
 
 		if ret[0] is not None and ret[0] != "":
-			log.debug("subprocess stdout: " + ret[0])
+			log.info("subprocess stdout: " + ret[0])
 		if ret[1] is not None and ret[0] != "":
-			log.debug("subprocess stderr: " + ret[1])
-		log.debug("Executed task: " + t.debug())
+			log.info("subprocess stderr: " + ret[1])
+		log.info("Executed task: " + t.debug())
 
 		del t
 
@@ -133,11 +133,11 @@ class DirScanner(threading.Thread):
 		self._localPath = localPath.encode(sys.getfilesystemencoding())
 		self._remotePath = remotePath
 		self._raw_log = None
-		log.debug(self.getName() + " (scanner): initiated")
+		log.info(self.getName() + " (scanner): initiated")
 
 	def ls(self):
 		SCANNER_SEMAPHORE.acquire()
-		log.debug("Start scanning dir " + self._remotePath + " (\"" + self._localPath + "\")")
+		log.info("Start scanning dir " + self._remotePath + " (\"" + self._localPath + "\")")
 		try:
 			self._raw_log = list(API.listdir(API.resolve_path(self._remotePath)))
 		except api_v5.DoesNotExists as e:
@@ -179,7 +179,7 @@ class DirScanner(threading.Thread):
 				if entry["name"] is None:
 					continue
 				if EXCLUDE != "" and re.match(EXCLUDE, entry["name"]):
-					log.debug("Remote file " + self._remotePath + "/" + entry["name"] + " is excluded.")
+					log.info("Remote file " + self._remotePath + "/" + entry["name"] + " is excluded.")
 					continue
 				self.checkout(entry)
 
@@ -202,13 +202,13 @@ class DirScanner(threading.Thread):
 					log.debug(localPath + " wasn't changed.")
 					return
 				elif local_mtime > remote_mtime:
-					log.debug("Local file \"" + self._localPath + "/" + entry["name"] + "\" is newer.")
+					log.info("Local file \"" + self._localPath + "/" + entry["name"] + "\" is newer.")
 					# Remote is preferential
 					os.remove(localPath)
 					TASK_QUEUE.put(Task("get", localPath, self._remotePath + "/" + entry["name"], entry["client_updated_time"]))
 
 				else:
-					log.debug("Local file \"" + self._localPath + "/" + entry["name"] + "\" is older.")
+					log.info("Local file \"" + self._localPath + "/" + entry["name"] + "\" is older.")
 					# Remote is preferential
 					os.remove(localPath)
 					TASK_QUEUE.put(Task("get", localPath, self._remotePath + "/" + entry["name"], entry["client_updated_time"]))
@@ -223,27 +223,27 @@ class DirScanner(threading.Thread):
 	def post_merge(self):
 		# there is untouched item in current dir
 		if self._ent_list:
-			log.debug("The following items are untouched yet:\n" + str(self._ent_list))
+			log.info("The following items are untouched yet:\n" + str(self._ent_list))
 
 			for entry in self._ent_list:
 				# Remote is preferential. Local is deleted.
 				if EXCLUDE != "" and re.match(EXCLUDE, entry):
-					log.debug(entry + " is a pattern that is excluded.")
+					log.info(entry + " is a pattern that is excluded.")
 				elif os.path.isfile(self._localPath + "/" + entry):
-					log.debug(self._localPath + "/" + entry + " is deleted.")
+					log.info(self._localPath + "/" + entry + " is deleted.")
 					os.remove(self._localPath + "/" + entry)
 				else:	# a dir
-					log.debug(self._localPath + "/" + entry + " is deleted.")
+					log.info(self._localPath + "/" + entry + " is deleted.")
 					shutil.rmtree(self._localPath + "/" + entry)
 
-		log.debug("Thread finished.")
+		log.info("Thread finished.")
 
 class Waiter(threading.Thread):
 
 	def __init__(self):
 		threading.Thread.__init__(self)
 		self.daemon = True
-		log.debug(self.getName() + " (waiter): initiated")
+		log.info(self.getName() + " (waiter): initiated")
 
 	def run(self):
 		while not SCANNER_QUEUE.empty():
@@ -255,5 +255,5 @@ class Waiter(threading.Thread):
 		TASK_QUEUE.join()
 		gc.collect()
 
-		log.debug("Thread finished.")
+		log.info("Thread finished.")
 		EVENT_STOP.set()

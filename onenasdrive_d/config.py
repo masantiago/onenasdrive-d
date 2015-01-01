@@ -14,11 +14,11 @@ EXCLUDE += ".*~|\.lock".split("|")
 EXCLUDE += [".wdmc"]
 EXCLUDE = "^(" + "|".join(EXCLUDE) + ")$"
 
-NUM_OF_WORKERS = 5
+NUM_OF_WORKERS = 2
 NUM_OF_SCANNERS = 4
 WORKER_SLEEP_INTERVAL = 3 # seconds
-PULL_INTERVAL = 600 # seconds
-MAX_WORKER_DURATION = 43200 # seconds
+PULL_INTERVAL = 3600 # seconds
+MAX_WORKER_DURATION = 1800 # seconds
 
 LOG_PATH = "/var/log/onenasdrive-d.log"
-log = Logger(LOG_PATH, Logger.NOTSET)
+log = Logger(LOG_PATH, Logger.INFO)
